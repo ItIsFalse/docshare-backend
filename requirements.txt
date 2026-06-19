@@ -7,3 +7,9 @@ pydantic
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+httpx
+uvicorn[standard]
+pydantic-settings
+email-validator
+alembic
+requests
