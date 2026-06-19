@@ -5,8 +5,8 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from .config import settings
 
-# Настройка хэширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Используем sha256_crypt вместо bcrypt (не требует компиляции)
+pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:

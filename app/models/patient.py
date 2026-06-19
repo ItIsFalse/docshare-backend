@@ -10,6 +10,7 @@ class Patient(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
 
     region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)  # <-- ДОБАВЛЯЕМ
 
     blood_type = Column(String(10), nullable=True)
     allergies = Column(Text, nullable=True)
@@ -18,8 +19,9 @@ class Patient(Base):
     emergency_contact_phone = Column(String(20), nullable=True)
 
     date_of_birth = Column(Date, nullable=True)
-    gender = Column(String(20), nullable=True)  # male, female, other
+    gender = Column(String(20), nullable=True)
 
     # Relationships
     user = relationship("User", backref="patient_profile", uselist=False)
     region = relationship("Region")
+    district = relationship("District")  # <-- ДОБАВЛЯЕМ
