@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import desc
 from datetime import datetime, timedelta
 from typing import Optional, List
 
@@ -48,7 +48,6 @@ def get_activities(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     else:
-        # По умолчанию сегодня
         today = datetime.now().replace(hour=0, minute=0, second=0)
         query = query.filter(Activity.activity_date >= today)
 
@@ -81,7 +80,6 @@ def create_activity(
     """Создать новую ежедневную цель"""
     patient_id = get_patient_id(current_user.id, db)
 
-    # Проверяем, нет ли уже такой цели на сегодня
     today = datetime.now().replace(hour=0, minute=0, second=0)
     existing = db.query(Activity).filter(
         Activity.patient_id == patient_id,
@@ -141,17 +139,13 @@ def toggle_activity(
     activity.completed = toggle_data.completed
     activity.completed_at = datetime.now() if toggle_data.completed else None
 
-    # Обновляем streak
     if toggle_data.completed:
-        # Получаем все завершенные активности за последние дни
         completed_count = db.query(Activity).filter(
             Activity.patient_id == patient_id,
             Activity.completed == True,
             Activity.activity_date >= datetime.now() - timedelta(days=30)
         ).count()
-
-        # Простой расчет streak
-        activity.streak = completed_count // 7  # Упрощенно
+        activity.streak = completed_count // 7
     else:
         activity.streak = 0
 
@@ -181,7 +175,6 @@ def get_activity_stats(
     """Получить статистику активности"""
     patient_id = get_patient_id(current_user.id, db)
 
-    # Получаем последние шаги из health_metrics
     steps_metric = db.query(HealthMetric).filter(
         HealthMetric.patient_id == patient_id,
         HealthMetric.metric_type == "steps"
@@ -201,7 +194,6 @@ def get_activity_stats(
     calories = int(calories_metric.value) if calories_metric else 450
     distance_km = float(distance_metric.value) if distance_metric else 6.2
 
-    # Получаем количество завершенных активностей за сегодня
     today = datetime.now().replace(hour=0, minute=0, second=0)
     today_completed = db.query(Activity).filter(
         Activity.patient_id == patient_id,
@@ -209,14 +201,12 @@ def get_activity_stats(
         Activity.activity_date >= today
     ).count()
 
-    # Streak
     streak_metric = db.query(Activity).filter(
         Activity.patient_id == patient_id,
         Activity.completed == True
     ).count()
-    day_streak = min(streak_metric // 2, 12)  # Упрощенный расчет
+    day_streak = min(streak_metric // 2, 12)
 
-    # Weekly trend (заглушка)
     weekly_trend = [60, 80, 45, 90, 70, 85, 100]
     weekly_change_percent = 12.0
 

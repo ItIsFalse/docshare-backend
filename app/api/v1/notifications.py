@@ -117,7 +117,7 @@ def mark_all_as_read(
     return {"success": True, "message": "All notifications marked as read"}
 
 
-@router.post("/devices/push-token")
+@router.post("/push-token")  
 def register_push_token(
         token_data: PushTokenRegister,
         db: Session = Depends(get_db),

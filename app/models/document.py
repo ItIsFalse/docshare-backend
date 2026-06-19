@@ -27,7 +27,9 @@ class Document(Base):
     doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True)
     appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=True)
 
-    title = Column(String(255), nullable=False)
+    # ЭТО ПОЛЕ ДОЛЖНО БЫТЬ
+    title = Column(String(255), nullable=False)  # <-- Убедитесь, что это есть
+
     document_type = Column(String(50), default=DocumentType.OTHER.value)
     document_date = Column(Date, nullable=False)
 
@@ -39,7 +41,7 @@ class Document(Base):
 
     file_name = Column(String(255), nullable=True)
     file_url = Column(Text, nullable=True)
-    file_size = Column(Integer, nullable=True)  # bytes
+    file_size = Column(Integer, nullable=True)
 
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(String(20), default=DocumentStatus.ACTIVE.value)

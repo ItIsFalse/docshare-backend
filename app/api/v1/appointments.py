@@ -332,7 +332,7 @@ def get_doctors(
         query = query.filter(Doctor.specialization.ilike(f"%{specialty}%"))
 
     if region:
-        query = query.join(Doctor.region).filter(Region.name_en == region)
+        query = query.join(Doctor.region).filter(Region.name == region)
 
     if q:
         query = query.join(Doctor.user).filter(
@@ -394,15 +394,14 @@ def get_hospitals(
     query = db.query(Hospital).filter(Hospital.is_active == True)
 
     if region:
-        query = query.join(Hospital.region).filter(Region.name_en == region)
+        query = query.join(Hospital.region).filter(Region.name == region)
 
     hospitals = query.limit(50).all()
 
     result = []
     for hospital in hospitals:
         doctor_count = db.query(Doctor).filter(Doctor.hospital_id == hospital.id).count()
-        region_name = hospital.region.name_en if hospital.region else ""
-
+        region_name = hospital.region.name if hospital.region else ""
         result.append(HospitalResponse(
             id=hospital.id,
             name=hospital.name_en,

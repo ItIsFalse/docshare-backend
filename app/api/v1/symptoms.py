@@ -25,9 +25,9 @@ def get_symptom_categories(
 
     categories = db.query(SymptomCategory).all()
 
-    # Если категорий нет, создаем тестовые
+    # Если категорий нет, возвращаем дефолтные без создания в БД
     if not categories:
-        return _create_default_categories(db)
+        return _get_default_categories()
 
     result = []
     for cat in categories:
@@ -53,7 +53,6 @@ def get_symptoms(
     query = db.query(Symptom)
 
     if category:
-        # Пробуем найти категорию по имени или id
         cat = db.query(SymptomCategory).filter(
             (SymptomCategory.name == category) |
             (SymptomCategory.id == int(category) if category.isdigit() else False)
@@ -63,6 +62,10 @@ def get_symptoms(
             query = query.filter(Symptom.category_id == cat.id)
 
     symptoms = query.all()
+
+    # Если симптомов нет, возвращаем дефолтные
+    if not symptoms:
+        return _get_default_symptoms(category)
 
     return [
         SymptomItem(
@@ -82,7 +85,6 @@ def get_symptom_questions(
 ):
     """Получить вопросы для симптома"""
 
-    # Пробуем найти симптом по id или name
     symptom = db.query(Symptom).filter(
         (Symptom.id == int(symptom_id) if symptom_id.isdigit() else False) |
         (Symptom.name == symptom_id)
@@ -95,9 +97,8 @@ def get_symptom_questions(
         SymptomQuestion.symptom_id == symptom.id
     ).all()
 
-    # Если вопросов нет, создаем тестовые
     if not questions:
-        return _create_test_questions(symptom)
+        return _get_default_questions(symptom.name)
 
     result = []
     for q in questions:
@@ -127,7 +128,6 @@ def check_symptoms(
 ):
     """Проверить симптомы и получить оценку"""
 
-    # Находим симптом
     symptom = db.query(Symptom).filter(
         (Symptom.id == int(check_data.symptom_id) if check_data.symptom_id.isdigit() else False) |
         (Symptom.name == check_data.symptom_id)
@@ -136,22 +136,29 @@ def check_symptoms(
     if not symptom:
         raise HTTPException(status_code=404, detail="Symptom not found")
 
-    # Рассчитываем severity на основе ответов
     total_severity = 0
     for answer in check_data.answers:
-        # Находим вопрос
-        question = db.query(SymptomQuestion).filter(
-            SymptomQuestion.id == int(answer.get("question_id", 0))
-        ).first()
+        question_id = answer.get("question_id")
+        option_id = answer.get("option_id")
 
-        if question:
-            # Находим опцию
-            for opt in question.options:
-                if opt["id"] == answer.get("option_id"):
-                    total_severity += opt.get("severity", 1)
-                    break
+        if question_id in ["q1", "q2"]:
+            if question_id == "q1":
+                total_severity += 1 if option_id == "a" else 2 if option_id == "b" else 3
+            else:
+                total_severity += 1 if option_id == "a" else 2 if option_id == "b" else 3
+            continue
 
-    # Определяем уровень
+        try:
+            q_id = int(question_id)
+            question = db.query(SymptomQuestion).filter(SymptomQuestion.id == q_id).first()
+            if question:
+                for opt in question.options:
+                    if opt.get("id") == option_id:
+                        total_severity += opt.get("severity", 1)
+                        break
+        except (ValueError, TypeError):
+            pass
+
     if total_severity <= 3:
         severity = "mild"
         score = random.randint(2, 4)
@@ -161,13 +168,13 @@ def check_symptoms(
     elif total_severity <= 6:
         severity = "moderate"
         score = random.randint(5, 7)
-        recommendation = "Schedule a doctor's appointment within 2-3 days. Avoid strenuous activity."
+        recommendation = "Schedule a doctor's appointment within 2-3 days."
         urgent = False
         suggested_specialty = _get_specialty_for_symptom(symptom.name)
     else:
         severity = "severe"
         score = random.randint(8, 10)
-        recommendation = "Seek immediate medical attention. Visit emergency room or call emergency services."
+        recommendation = "Seek immediate medical attention!"
         urgent = True
         suggested_specialty = _get_specialty_for_symptom(symptom.name)
 
@@ -182,35 +189,32 @@ def check_symptoms(
 
 # ============= HELPER FUNCTIONS =============
 
-def _create_default_categories(db: Session) -> List[SymptomCategorySchema]:
-    """Создает тестовые категории симптомов"""
-
-    categories_data = [
-        {"name": "General Symptoms", "icon": "🩺", "description": "Common general symptoms"},
-        {"name": "Respiratory", "icon": "🫁", "description": "Breathing and respiratory issues"},
-        {"name": "Heart & Circulation", "icon": "❤️", "description": "Cardiovascular symptoms"},
-        {"name": "Digestive", "icon": "🍽️", "description": "Digestive system issues"},
-        {"name": "Muscles & Joints", "icon": "💪", "description": "Musculoskeletal symptoms"},
-        {"name": "Head & Mind", "icon": "🧠", "description": "Neurological and mental symptoms"},
-        {"name": "Skin & Allergies", "icon": "🧴", "description": "Skin conditions and allergies"},
-        {"name": "Urinary", "icon": "🚽", "description": "Urinary system issues"}
+def _get_default_categories() -> List[SymptomCategorySchema]:
+    """Возвращает дефолтные категории (без БД)"""
+    categories = [
+        {"id": "general", "name": "General Symptoms", "icon": "🩺"},
+        {"id": "respiratory", "name": "Respiratory", "icon": "🫁"},
+        {"id": "heart", "name": "Heart & Circulation", "icon": "❤️"},
+        {"id": "digestive", "name": "Digestive", "icon": "🍽️"},
+        {"id": "muscles", "name": "Muscles & Joints", "icon": "💪"},
+        {"id": "head", "name": "Head & Mind", "icon": "🧠"},
+        {"id": "skin", "name": "Skin & Allergies", "icon": "🧴"},
+        {"id": "urinary", "name": "Urinary", "icon": "🚽"}
+    ]
+    return [
+        SymptomCategorySchema(
+            id=c["id"],
+            name=c["name"],
+            icon=c["icon"],
+            symptoms_count=5
+        )
+        for c in categories
     ]
 
-    created = []
-    for cat_data in categories_data:
-        existing = db.query(SymptomCategory).filter(SymptomCategory.name == cat_data["name"]).first()
-        if not existing:
-            new_cat = SymptomCategory(**cat_data)
-            db.add(new_cat)
-            db.flush()
-            created.append(new_cat)
-        else:
-            created.append(existing)
 
-    db.commit()
-
-    # Создаем тестовые симптомы для каждой категории
-    symptoms_data = {
+def _get_default_symptoms(category: Optional[str]) -> List[SymptomItem]:
+    """Возвращает дефолтные симптомы"""
+    symptoms_map = {
         "General Symptoms": ["Fever", "Fatigue", "Headache", "Chills", "Night Sweats"],
         "Respiratory": ["Cough", "Shortness of Breath", "Wheezing", "Chest Congestion", "Sore Throat"],
         "Heart & Circulation": ["Chest Pain", "Palpitations", "High Blood Pressure", "Dizziness"],
@@ -221,111 +225,23 @@ def _create_default_categories(db: Session) -> List[SymptomCategorySchema]:
         "Urinary": ["Painful Urination", "Frequent Urination", "Blood in Urine"]
     }
 
-    for cat_name, symptom_names in symptoms_data.items():
-        cat = db.query(SymptomCategory).filter(SymptomCategory.name == cat_name).first()
-        if cat:
-            for symptom_name in symptom_names:
-                existing = db.query(Symptom).filter(
-                    Symptom.category_id == cat.id,
-                    Symptom.name == symptom_name
-                ).first()
-                if not existing:
-                    new_symptom = Symptom(
-                        category_id=cat.id,
-                        name=symptom_name,
-                        severity="mild"
-                    )
-                    db.add(new_symptom)
+    symptoms = symptoms_map.get(category or "General Symptoms", ["Fever", "Headache", "Cough"])
 
-    db.commit()
-
-    # Возвращаем результат
-    result = []
-    for cat in created:
-        symptoms_count = db.query(Symptom).filter(Symptom.category_id == cat.id).count()
-        result.append(SymptomCategorySchema(
-            id=str(cat.id),
-            name=cat.name,
-            icon=cat.icon,
-            symptoms_count=symptoms_count
-        ))
-
-    return result
+    return [
+        SymptomItem(
+            id=s.lower().replace(" ", "_"),
+            name=s,
+            severity="mild"
+        )
+        for s in symptoms[:5]
+    ]
 
 
-def _create_test_questions(symptom: Symptom) -> List[SymptomQuestionSchema]:
-    """Создает тестовые вопросы для симптома"""
-
-    questions_data = {
-        "Cough": [
-            {
-                "question": "How long have you had the cough?",
-                "options": [
-                    {"id": "a", "text": "Less than 24 hours", "severity": 1},
-                    {"id": "b", "text": "1-3 days", "severity": 2},
-                    {"id": "c", "text": "More than 3 days", "severity": 3}
-                ]
-            },
-            {
-                "question": "Is the cough productive (with phlegm)?",
-                "options": [
-                    {"id": "a", "text": "No, dry cough", "severity": 1},
-                    {"id": "b", "text": "Yes, clear phlegm", "severity": 2},
-                    {"id": "c", "text": "Yes, colored phlegm", "severity": 3}
-                ]
-            }
-        ],
-        "Fever": [
-            {
-                "question": "What is your temperature?",
-                "options": [
-                    {"id": "a", "text": "Below 38°C", "severity": 1},
-                    {"id": "b", "text": "38-39°C", "severity": 2},
-                    {"id": "c", "text": "Above 39°C", "severity": 3}
-                ]
-            },
-            {
-                "question": "How long have you had the fever?",
-                "options": [
-                    {"id": "a", "text": "Less than 24 hours", "severity": 1},
-                    {"id": "b", "text": "1-3 days", "severity": 2},
-                    {"id": "c", "text": "More than 3 days", "severity": 3}
-                ]
-            }
-        ],
-        "Chest Pain": [
-            {
-                "question": "What type of pain are you experiencing?",
-                "options": [
-                    {"id": "a", "text": "Mild discomfort", "severity": 1},
-                    {"id": "b", "text": "Sharp pain", "severity": 2},
-                    {"id": "c", "text": "Tightness or pressure", "severity": 3}
-                ]
-            },
-            {
-                "question": "Does the pain spread to other areas?",
-                "options": [
-                    {"id": "a", "text": "No, stays in chest", "severity": 1},
-                    {"id": "b", "text": "Yes, to left arm", "severity": 2},
-                    {"id": "c", "text": "Yes, to jaw or back", "severity": 3}
-                ]
-            }
-        ],
-        "Headache": [
-            {
-                "question": "What type of headache is it?",
-                "options": [
-                    {"id": "a", "text": "Dull, aching pain", "severity": 1},
-                    {"id": "b", "text": "Throbbing pain", "severity": 2},
-                    {"id": "c", "text": "Sharp, stabbing pain", "severity": 3}
-                ]
-            }
-        ]
-    }
-
-    # Используем стандартные вопросы, если для симптома нет специальных
-    default_questions = [
+def _get_default_questions(symptom_name: str) -> List[SymptomQuestionSchema]:
+    """Возвращает дефолтные вопросы"""
+    questions = [
         {
+            "id": "q1",
             "question": "How severe is your symptom?",
             "options": [
                 {"id": "a", "text": "Mild", "severity": 1},
@@ -334,6 +250,7 @@ def _create_test_questions(symptom: Symptom) -> List[SymptomQuestionSchema]:
             ]
         },
         {
+            "id": "q2",
             "question": "How long have you had this symptom?",
             "options": [
                 {"id": "a", "text": "Less than 24 hours", "severity": 1},
@@ -343,10 +260,8 @@ def _create_test_questions(symptom: Symptom) -> List[SymptomQuestionSchema]:
         }
     ]
 
-    q_data = questions_data.get(symptom.name, default_questions)
-
     result = []
-    for idx, q in enumerate(q_data):
+    for q in questions:
         options = [
             SymptomQuestionOption(
                 id=opt["id"],
@@ -357,7 +272,7 @@ def _create_test_questions(symptom: Symptom) -> List[SymptomQuestionSchema]:
         ]
 
         result.append(SymptomQuestionSchema(
-            id=f"q_{idx + 1}",
+            id=q["id"],
             question=q["question"],
             options=options
         ))

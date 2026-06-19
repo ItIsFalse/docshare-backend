@@ -8,23 +8,9 @@ from app.core.database import init_db
 from app.api.v1 import (
     auth, users, roles, dashboard, vitals,
     appointments, family, activities, documents,
-    doctor, admin, notifications, symptoms, environment, devices  # <-- добавляем devices
+    doctor, admin, notifications, symptoms, environment, devices
 )
 
-# ...
-
-
-# ...
-
-
-# ...
-
-# ...
-
-
-# ...
-
-  # <-- добавляем
 # Инициализация БД при старте
 init_db()
 
@@ -54,14 +40,15 @@ app.include_router(roles.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(vitals.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
-app.include_router(family.router, prefix="/api/v1")        # <-- добавляем
+app.include_router(family.router, prefix="/api/v1")
 app.include_router(activities.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
-app.include_router(doctor.router, prefix="/api/v1")# <-- добавляем
-app.include_router(admin.router, prefix="/api/v1")  # <-- добавляем
-app.include_router(symptoms.router, prefix="/api/v1")  # <-- добавляем
-app.include_router(environment.router, prefix="/api/v1")  # <-- добавляем
-app.include_router(devices.router, prefix="/api/v1")  # <-- добавляем
+app.include_router(doctor.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(symptoms.router, prefix="/api/v1")
+app.include_router(environment.router, prefix="/api/v1")
+app.include_router(devices.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

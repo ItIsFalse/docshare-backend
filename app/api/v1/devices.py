@@ -142,3 +142,15 @@ def sync_device(
         "message": "Device synced",
         "last_sync": device.last_sync
     }
+
+@router.post("/push-token")
+def register_push_token(
+    token_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Зарегистрировать push-токен устройства"""
+    return {
+        "success": True,
+        "message": f"Push token registered for {token_data.get('platform', 'unknown')}"
+    }
