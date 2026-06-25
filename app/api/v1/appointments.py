@@ -398,7 +398,6 @@ def get_hospitals(
     return result
 
 
-# ТОЛЬКО ОДНА ВЕРСИЯ /specialties (фиксированный список)
 @router.get("/specialties", response_model=List[SpecialtyResponse])
 def get_specialties(
         db: Session = Depends(get_db),
@@ -406,13 +405,13 @@ def get_specialties(
 ):
     """Получить список специальностей"""
     specialties = [
-        {"id": "cardiology", "name": "Cardiology", "icon": "❤️"},
-        {"id": "general", "name": "General Practice", "icon": "🩺"},
-        {"id": "neurology", "name": "Neurology", "icon": "🧠"},
-        {"id": "pediatrics", "name": "Pediatrics", "icon": "👶"},
-        {"id": "orthopedics", "name": "Orthopedics", "icon": "🦴"},
-        {"id": "dermatology", "name": "Dermatology", "icon": "🧴"},
-        {"id": "ophthalmology", "name": "Ophthalmology", "icon": "👁️"},
-        {"id": "stomatology", "name": "Stomatology", "icon": "🦷"},
+        {"id": "cardiology", "name": "Cardiology"},
+        {"id": "general", "name": "General Practice"},
+        {"id": "neurology", "name": "Neurology"},
+        {"id": "pediatrics", "name": "Pediatrics"},
+        {"id": "orthopedics", "name": "Orthopedics"},
+        {"id": "dermatology", "name": "Dermatology"},
+        {"id": "ophthalmology", "name": "Ophthalmology"},
+        {"id": "stomatology", "name": "Stomatology"},
     ]
     return [SpecialtyResponse(**s) for s in specialties]

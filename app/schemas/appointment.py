@@ -50,7 +50,7 @@ class DoctorResponse(BaseModel):
 class SpecialtyResponse(BaseModel):
     id: str
     name: str
-    icon: Optional[str] = None  # <-- ДОБАВЬТЕ ЭТО ПОЛЕ
+    # icon: Optional[str] = None  # <-- ДОБАВЬТЕ ЭТО ПОЛЕ
 
 
 class HospitalResponse(BaseModel):
