@@ -1,8 +1,7 @@
 import sys
 import os
 from datetime import datetime
-from app.models.medical_record import MedicalRecord
-from datetime import timedelta  # если нет
+from datetime import timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -16,6 +15,8 @@ from app.models.patient import Patient
 from app.models.doctor import Doctor
 from app.models.hospital import Hospital
 from app.models.family_member import FamilyMember
+from app.models.medical_record import MedicalRecord
+from app.models.health_metric import HealthMetric
 
 
 def seed_roles():
@@ -100,7 +101,6 @@ def seed_hospitals():
     """Создание больниц"""
     db = SessionLocal()
 
-    # Получаем регионы
     tashkent = db.query(Region).filter(Region.code == "TASH").first()
     samarkand = db.query(Region).filter(Region.code == "SAM").first()
     bukhara = db.query(Region).filter(Region.code == "BUK").first()
@@ -242,7 +242,6 @@ def seed_test_users():
             db.add(new_user)
             db.flush()
 
-            # Создаем запись пациента (для всех)
             patient = Patient(
                 user_id=new_user.id,
                 region_id=tashkent.id if tashkent else None,
@@ -252,7 +251,6 @@ def seed_test_users():
             db.add(patient)
             db.flush()
 
-            # Если доктор - создаем запись доктора
             if user_data.get("is_doctor"):
                 doctor = Doctor(
                     user_id=new_user.id,
@@ -275,7 +273,6 @@ def seed_family_members():
     """Создание тестовых членов семьи"""
     db = SessionLocal()
 
-    # Получаем пациента (citizen)
     user = db.query(User).filter(User.email == "citizen@docshare.uz").first()
     if not user:
         db.close()
@@ -341,7 +338,6 @@ def seed_family_members():
         ).first()
 
         if not existing:
-            # Парсим дату рождения
             dob = None
             if member_data.get("date_of_birth"):
                 try:
@@ -371,7 +367,6 @@ def seed_medical_records():
     """Создание тестовых медицинских записей"""
     db = SessionLocal()
 
-    # Получаем пациента (citizen)
     user = db.query(User).filter(User.email == "citizen@docshare.uz").first()
     if not user:
         db.close()
@@ -382,7 +377,6 @@ def seed_medical_records():
         db.close()
         return
 
-    # Получаем доктора
     doctor = db.query(Doctor).first()
     if not doctor:
         db.close()
@@ -429,6 +423,71 @@ def seed_medical_records():
     print("✅ Medical records seeded")
 
 
+def seed_vitals():
+    """Создание тестовых витальных показателей"""
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.email == "citizen@docshare.uz").first()
+    if not user:
+        db.close()
+        return
+
+    patient = db.query(Patient).filter(Patient.user_id == user.id).first()
+    if not patient:
+        db.close()
+        return
+
+    # Удаляем старые vitals с отрицательными значениями
+    db.query(HealthMetric).filter(HealthMetric.patient_id == patient.id).delete()
+    db.commit()
+
+    vitals_data = [
+        {"hr_bpm": 72, "bp_sys": 120, "bp_dia": 80, "spo2": 98, "weight": 74.7, "temperature": 36.6,
+         "fasting_glucose": 95},
+        {"hr_bpm": 68, "bp_sys": 118, "bp_dia": 76, "spo2": 97, "weight": 74.5, "temperature": 36.7,
+         "fasting_glucose": 92},
+        {"hr_bpm": 75, "bp_sys": 122, "bp_dia": 78, "spo2": 99, "weight": 74.9, "temperature": 36.5,
+         "fasting_glucose": 98},
+        {"hr_bpm": 70, "bp_sys": 115, "bp_dia": 75, "spo2": 98, "weight": 74.3, "temperature": 36.8,
+         "fasting_glucose": 94},
+        {"hr_bpm": 73, "bp_sys": 121, "bp_dia": 77, "spo2": 97, "weight": 74.6, "temperature": 36.6,
+         "fasting_glucose": 96},
+        {"hr_bpm": 69, "bp_sys": 117, "bp_dia": 74, "spo2": 98, "weight": 74.4, "temperature": 36.7,
+         "fasting_glucose": 93},
+        {"hr_bpm": 71, "bp_sys": 119, "bp_dia": 76, "spo2": 98, "weight": 74.7, "temperature": 36.6,
+         "fasting_glucose": 95},
+    ]
+
+    for i, data in enumerate(vitals_data):
+        measured_at = datetime.now() - timedelta(days=6 - i)
+        measured_at = measured_at.replace(hour=8, minute=0, second=0)
+
+        metrics = [
+            ("heart_rate", data["hr_bpm"], "BPM"),
+            ("blood_pressure_systolic", data["bp_sys"], "mmHg"),
+            ("blood_pressure_diastolic", data["bp_dia"], "mmHg"),
+            ("spo2", data["spo2"], "%"),
+            ("weight", data["weight"], "kg"),
+            ("temperature", data["temperature"], "°C"),
+            ("blood_glucose", data["fasting_glucose"], "mg/dL"),
+        ]
+
+        for metric_type, value, unit in metrics:
+            metric = HealthMetric(
+                patient_id=patient.id,
+                metric_type=metric_type,
+                value=float(value),
+                unit=unit,
+                measured_at=measured_at,
+                source="manual"
+            )
+            db.add(metric)
+
+    db.commit()
+    db.close()
+    print("✅ Vitals seeded")
+
+
 if __name__ == "__main__":
     print("🌱 Seeding database...")
     init_db()
@@ -437,5 +496,6 @@ if __name__ == "__main__":
     seed_hospitals()
     seed_test_users()
     seed_family_members()
-    seed_medical_records()  # <-- ДОБАВЬТЕ ЭТУ СТРОКУ
+    seed_medical_records()
+    seed_vitals()  # <-- ДОБАВЛЕНО
     print("✅ Database seeded successfully!")
