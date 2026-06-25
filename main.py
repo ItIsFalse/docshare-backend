@@ -33,13 +33,18 @@ app.add_middleware(
 )
 
 
-# Добавляем middleware для автоматического добавления слеша
+# Добавляем middleware для автоматического добавления слеша (ОДИН РАЗ)
 class AddSlashMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
         # Пропускаем специальные пути
         skip_paths = ["/", "/health", "/docs", "/openapi.json", "/redoc"]
+
+        # Пропускаем auth эндпоинты (чтобы избежать бесконечных редиректов)
+        if path.startswith("/api/v1/auth"):
+            return await call_next(request)
+
         if path.startswith("/uploads"):
             return await call_next(request)
         if path in skip_paths:
