@@ -14,7 +14,7 @@ from app.schemas.activity import (
     ActivityCreate, ActivityToggle, ActivityResponse, ActivityStatsResponse
 )
 
-router = APIRouter(prefix="/activities", tags=["Activities"])
+router = APIRouter(prefix="/activity", tags=["Activities"])
 
 
 def get_patient_id(user_id: int, db: Session) -> int:

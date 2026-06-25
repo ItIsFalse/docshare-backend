@@ -365,25 +365,6 @@ def get_doctors(
     return result
 
 
-@router.get("/specialties", response_model=List[SpecialtyResponse])
-def get_specialties(
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
-    """Получить список специальностей"""
-    specialties = db.query(Doctor.specialization).distinct().all()
-
-    result = []
-    for idx, spec in enumerate(specialties):
-        result.append(SpecialtyResponse(
-            id=f"spec_{idx + 1}",
-            name=spec[0] if spec and spec[0] else "Unknown",
-            icon=None
-        ))
-
-    return result
-
-
 @router.get("/hospitals", response_model=List[HospitalResponse])
 def get_hospitals(
         region: Optional[str] = Query(None),
@@ -415,3 +396,23 @@ def get_hospitals(
         ))
 
     return result
+
+
+# ТОЛЬКО ОДНА ВЕРСИЯ /specialties (фиксированный список)
+@router.get("/specialties", response_model=List[SpecialtyResponse])
+def get_specialties(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """Получить список специальностей"""
+    specialties = [
+        {"id": "cardiology", "name": "Cardiology", "icon": "❤️"},
+        {"id": "general", "name": "General Practice", "icon": "🩺"},
+        {"id": "neurology", "name": "Neurology", "icon": "🧠"},
+        {"id": "pediatrics", "name": "Pediatrics", "icon": "👶"},
+        {"id": "orthopedics", "name": "Orthopedics", "icon": "🦴"},
+        {"id": "dermatology", "name": "Dermatology", "icon": "🧴"},
+        {"id": "ophthalmology", "name": "Ophthalmology", "icon": "👁️"},
+        {"id": "stomatology", "name": "Stomatology", "icon": "🦷"},
+    ]
+    return [SpecialtyResponse(**s) for s in specialties]

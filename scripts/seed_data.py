@@ -1,6 +1,8 @@
 import sys
 import os
 from datetime import datetime
+from app.models.medical_record import MedicalRecord
+from datetime import timedelta  # если нет
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -365,6 +367,68 @@ def seed_family_members():
     print("✅ Family members seeded")
 
 
+def seed_medical_records():
+    """Создание тестовых медицинских записей"""
+    db = SessionLocal()
+
+    # Получаем пациента (citizen)
+    user = db.query(User).filter(User.email == "citizen@docshare.uz").first()
+    if not user:
+        db.close()
+        return
+
+    patient = db.query(Patient).filter(Patient.user_id == user.id).first()
+    if not patient:
+        db.close()
+        return
+
+    # Получаем доктора
+    doctor = db.query(Doctor).first()
+    if not doctor:
+        db.close()
+        return
+
+    medical_records_data = [
+        {
+            "record_type": "diagnosis",
+            "diagnosis": "Respiratory Infection",
+            "description": "Airway inflammation",
+            "treatment": "Antibiotics and rest",
+            "outcome": "recovered",
+            "severity": "medium",
+            "record_date": datetime.now() - timedelta(days=60)
+        },
+        {
+            "record_type": "diagnosis",
+            "diagnosis": "Seasonal Allergy",
+            "description": "Pollen & dust reaction",
+            "treatment": "Antihistamines as needed",
+            "outcome": "managing",
+            "severity": "mild",
+            "record_date": datetime.now() - timedelta(days=30)
+        }
+    ]
+
+    for record_data in medical_records_data:
+        existing = db.query(MedicalRecord).filter(
+            MedicalRecord.patient_id == patient.id,
+            MedicalRecord.diagnosis == record_data["diagnosis"]
+        ).first()
+
+        if not existing:
+            new_record = MedicalRecord(
+                patient_id=patient.id,
+                doctor_id=doctor.id,
+                created_by=user.id,
+                **record_data
+            )
+            db.add(new_record)
+
+    db.commit()
+    db.close()
+    print("✅ Medical records seeded")
+
+
 if __name__ == "__main__":
     print("🌱 Seeding database...")
     init_db()
@@ -373,4 +437,5 @@ if __name__ == "__main__":
     seed_hospitals()
     seed_test_users()
     seed_family_members()
+    seed_medical_records()  # <-- ДОБАВЬТЕ ЭТУ СТРОКУ
     print("✅ Database seeded successfully!")
