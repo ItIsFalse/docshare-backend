@@ -10,7 +10,7 @@ from app.core.database import init_db
 from app.api.v1 import (
     auth, users, roles, dashboard, vitals,
     appointments, family, activities, documents,
-    doctor, admin, notifications, symptoms, environment, devices
+    doctor, admin, notifications, symptoms, environment, devices, doctors
 )
 
 # Инициализация БД при старте
@@ -76,6 +76,7 @@ app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(symptoms.router, prefix="/api/v1")
 app.include_router(environment.router, prefix="/api/v1")
 app.include_router(devices.router, prefix="/api/v1")
+app.include_router(doctors.router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -90,11 +91,3 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
-
-@app.get("/api/v1/doctors")
-async def doctors_redirect():
-    return RedirectResponse(url="/api/v1/appointments/doctors/")
-
-@app.get("/api/v1/doctors/")
-async def doctors_redirect_slash():
-    return RedirectResponse(url="/api/v1/appointments/doctors/")
