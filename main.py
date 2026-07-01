@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.core.config import settings
-# from app.core.database import init_db
+from app.core.database import get_db
 from app.api.v1 import (
     auth, users, roles, dashboard, vitals,
     appointments, family, activities, documents,
@@ -13,7 +13,7 @@ from app.api.v1 import (
 )
 
 # Инициализация БД при старте
-init_db()
+get_db()
 
 app = FastAPI(
     title=settings.APP_NAME,
