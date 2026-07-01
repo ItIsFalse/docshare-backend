@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.core.config import settings
-from app.core.database import init_db
+# from app.core.database import init_db
 from app.api.v1 import (
     auth, users, roles, dashboard, vitals,
     appointments, family, activities, documents,
