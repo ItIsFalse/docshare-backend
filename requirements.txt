@@ -13,3 +13,4 @@ pydantic-settings
 email-validator
 alembic
 requests
+asyncpg
